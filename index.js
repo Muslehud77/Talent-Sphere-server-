@@ -48,7 +48,18 @@ async function run() {
     //*contest related api calls
 
     app.get('/contest',async(req,res)=>{
-        const result = await contestCollection.find().toArray()
+        const result = await contestCollection
+          .find({},{
+            projection: {
+              _id: 1,
+              contestName: 1,
+              contestImg: 1,
+              attempt: 1,
+              tags: 1,
+              shortDescription: 1,
+            },
+          })
+          .toArray();
         res.send(result)
     })
 
