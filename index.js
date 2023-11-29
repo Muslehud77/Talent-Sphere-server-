@@ -120,19 +120,22 @@ async function run() {
     app.get('/talented-users',async(req,res)=>{
       
     try{
-        const talented = await usersCollection.find(
-        { contestWon: { $gt: 50 } },
-        {
-          projection: {
-            _id: 1,
-            userImg: 1,
-            name: 1,
-            contestWon: 1,
-            contestParticipated : 1,
-          },
-        }
-      ).toArray();
-
+        const talented = await usersCollection
+          .find(
+            { contestWon: { $gt: 50 } },
+            {
+              projection: {
+                _id: 1,
+                userImg: 1,
+                name: 1,
+                contestWon: 1,
+                contestParticipated: 1,
+                prizeMoney:1,
+              },
+            }
+          )
+          .toArray();
+        console.log(talented);
       res.send(talented)
 
     }catch(e) {
@@ -141,6 +144,49 @@ async function run() {
     })
 
 
+    //* Creator related api 
+
+    app.get('/happy-creators',async(req, res)=>{
+         const pipeline = [
+           {
+             $unwind: "$creatorInfo",
+           },
+           {
+             $sort: { "creatorInfo.attempt": -1 },
+           },
+           {
+             $group: {
+               _id: "$creatorInfo.creatorName",
+               creatorImage: { $first: "$creatorInfo.creatorImage" },
+               contests: {
+                 $push: {
+                   contestName: "$contestName",
+                   shortDescription: "$shortDescription",
+                   prizeMoney: "$prizeMoney",
+                   attempt: "$attempt",
+                   contestCategory: "$contestCategory",
+                 },
+               },
+             },
+           },
+           {
+             $project: {
+               _id: 0,
+               creatorName: "$_id",
+               creatorImage: 1,
+               contests: {
+                 $slice: ["$contests", 3], // Get at least 3 contests
+               },
+             },
+           },
+         ];
+
+        const result = await contestCollection.aggregate(pipeline).toArray();
+        res.json(result);
+
+
+
+    })
 
 
 
