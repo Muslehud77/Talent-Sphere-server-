@@ -43,8 +43,8 @@ async function run() {
       try {
           const page = parseInt(req.query.page) - 1;
           const size = parseInt(req.query.size);
-
         
+       
 
         if (req.query.sort) {
           if (req.query.sort === "All") {
@@ -58,7 +58,6 @@ async function run() {
           }
         }
 
-       console.log(query);
 
         const result = await contestCollection
           .find(query, {
@@ -135,12 +134,30 @@ async function run() {
             }
           )
           .toArray();
-        console.log(talented);
+        
       res.send(talented)
 
     }catch(e) {
       console.log(e);
     }
+    })
+
+    app.post('/user',async(req,res)=>{
+      try{
+        const user = req.body
+
+      const isExist = await usersCollection.findOne({email: user.email})
+      if(isExist){
+        return res.send({ isExist: isExist && true });
+
+      }
+
+      const result = await usersCollection.insertOne(user)
+      res.send(result)
+      }catch(err){
+        console.log(err);
+      }
+
     })
 
 
@@ -158,8 +175,10 @@ async function run() {
              $group: {
                _id: "$creatorInfo.creatorName",
                creatorImage: { $first: "$creatorInfo.creatorImage" },
+               totalContests: { $sum: 1 },
                contests: {
                  $push: {
+                   id: "$_id",
                    contestName: "$contestName",
                    shortDescription: "$shortDescription",
                    prizeMoney: "$prizeMoney",
@@ -174,6 +193,7 @@ async function run() {
                _id: 0,
                creatorName: "$_id",
                creatorImage: 1,
+               totalContests: 1,
                contests: {
                  $slice: ["$contests", 3], // Get at least 3 contests
                },
