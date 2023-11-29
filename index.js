@@ -29,6 +29,7 @@ async function run() {
 
     const talentSphere = client.db("Talent-Sphere");
     const contestCollection = talentSphere.collection("contest");
+    const usersCollection = talentSphere.collection("users");
 
     //*contest related api calls
 
@@ -111,6 +112,40 @@ async function run() {
         .toArray();
       res.send(result);
     });
+
+
+
+    //*user related api calls
+
+    app.get('/talented-users',async(req,res)=>{
+      
+    try{
+        const talented = await usersCollection.find(
+        { contestWon: { $gt: 50 } },
+        {
+          projection: {
+            _id: 1,
+            userImg: 1,
+            name: 1,
+            contestWon: 1,
+            contestParticipated : 1,
+          },
+        }
+      ).toArray();
+
+      res.send(talented)
+
+    }catch(e) {
+      console.log(e);
+    }
+    })
+
+
+
+
+
+
+
 
     await client.db("admin").command({ ping: 1 });
     console.log(
