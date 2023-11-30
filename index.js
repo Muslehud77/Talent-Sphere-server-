@@ -31,6 +31,7 @@ async function run() {
     const talentSphere = client.db("Talent-Sphere");
     const contestCollection = talentSphere.collection("contest");
     const usersCollection = talentSphere.collection("users");
+    const paymentsCollection = talentSphere.collection("payments");
 
     //*middlewares
 
@@ -75,13 +76,14 @@ async function run() {
       res.send({ token });
     });
 
-    
+
     //* payment intent
     app.post("/create-payment-intent", async (req, res) => {
       try {
+        console.log(req.body);
         const { price } = req.body;
-        const amount = parseInt(price * 100);
-
+        const amount = price * 100;
+        console.log(price);
         const paymentIntent = await stripe.paymentIntents.create({
           amount,
           currency: "usd",
@@ -97,12 +99,26 @@ async function run() {
 
     
     app.get("/paymentHistory", verifyToken, async (req, res) => {
-      if (req.query.email === req.decoded.email) {
-        const query = { email: req.query.email };
-        const paymentHistory = await paymentCollection.find(query).toArray();
-        res.send(paymentHistory);
-      }
+       const query = { email: req.decoded.email };
+       const paymentHistory = await paymentsCollection.find(query).toArray();
+       res.send(paymentHistory);
     });
+
+    app.post('/payment',verifyToken,async(req, res) => {
+      try{
+        const payment = req.body
+        const result = await paymentsCollection.insertOne(payment);
+        const increase = await usersCollection.updateOne(
+          { email: req.body.email },
+          { $inc: { contestParticipated: 1 } }
+        );
+        console.log(increase);
+        res.send(result);
+      }catch (err) {
+        console.log(err);
+      }
+
+    })
 
     //*contest related api calls
 
@@ -227,7 +243,7 @@ async function run() {
 
     app.get("/user", async (req, res) => {
       try {
-        const query = { email: req.query.email };
+        const query = {  email: req.query.email };
 
         const user = await usersCollection.findOne(query);
         res.send(user);
@@ -235,6 +251,16 @@ async function run() {
         console.log(err);
       }
     });
+
+    app.patch('/userUpdate/:id',verifyToken, async (req, res) => {
+      const query = { _id: new ObjectId(req.params.id) };
+      const info = req.body
+      const update = await usersCollection.updateOne(query, { $set:info });
+      console.log(update);
+      res.send(update);
+
+    })
+
 
     //* Creator related api
 
